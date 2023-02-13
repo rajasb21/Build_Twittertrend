@@ -11,7 +11,7 @@ pipeline{
     stages {
         stage("git clone") {
             steps{
-                git branch: 'main', credentialsId: '00e0c593-5358-42f8-9280-d37679fc6ea4', url: 'https://github.com/rajasb21/Build_Twittertrend.git'
+		git branch: 'main', credentialsId: '4309365a-da2e-4ef7-b13f-23443ee79697', url: 'https://github.com/rajasb21/Build_Twittertrend.git'
             }
         }    
             

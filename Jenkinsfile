@@ -1,7 +1,7 @@
 pipeline{
     agent {
         node {
-            label "Slave2"
+            label "Slave1"
         }
     }
     environment {
@@ -18,5 +18,21 @@ pipeline{
                 sh 'mvn clean install'
             }
         }
+        stage("Code Analysis") {
+            environment {
+                scannerHome = tool 'SONARQUBE_SCANNER'
+            }
+            steps {
+                echo '<--------------Sonar Analysis Started------------------->'
+                withSonarQubeEnv('SONARQUBE_SERVER') {
+                    sh "${scannerHome}/bin/sonar-scanner"
+                echo '<--------------Sonar Analysis Stopped------------------->'
+                }
+            }
+        }
+        
     }
-}
+}    
+
+
+

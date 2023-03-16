@@ -1,7 +1,10 @@
+def registry = 'https://testfrog21.jfrog.io'
+def imageName = 'testfrog21.jfrog.io/mytwittertrend-docker/twittertrend'
+def version = '2.0.2'
 pipeline{
     agent {
         node {
-            label "Slave2"
+            label "Slave1"
         }
     }
     environment {
@@ -10,7 +13,7 @@ pipeline{
     stages{
         stage("git clone") {
             steps {
-                git branch: 'main', credentialsId: 'd7e87e01-8f7c-4e27-8206-bec0ccc24af6', url: 'https://github.com/rajasb21/Build_Twittertrend.git'
+                git branch: 'main', credentialsId: '540e877e-667e-47d2-b7ef-695ea1aefe6d', url: 'https://github.com/rajasb21/Build_Twittertrend.git'
             }
         }
         stage("Build") {
@@ -23,29 +26,51 @@ pipeline{
                 scannerHome = tool 'SONARQUBE_SCANNER'
             }
             steps {
-                echo '<--------------Sonar Analysis Started------------------->'
+                echo '<--------------Code Analysis Started------------->'
                 withSonarQubeEnv('SONARQUBE_SERVER') {
                     sh "${scannerHome}/bin/sonar-scanner"
-                echo '<--------------Sonar Analysis Stopped------------------->'
+                echo '<--------------Code Analysis Stopped------------->'    
                 }
             }
         }
         stage("Quality Gate") {
             steps {
                 script {
-                    echo '<---------------------Quality Gate Analysis Started------------------------->'
-                    timeout(time: 1, unit: 'HOURS'){
+                    echo '<-----------------Quality Gate Started-------------->'
+                    timeout(time: 1, unit: 'HOURS') {
                         def qg = waitForQualityGate()
                         if(qg.status !='OK') {
                             error "Pipeline failed due to quality gate failures: ${qg.status}"
                         }
+                        
                     }
                 }
             }
         }
-        
+        stage("jar publish") {
+            steps {
+                script {
+                    echo '<--------------Jar Publish Started---------------->'
+                    def server = Artifactory.newServer url:registry+"/artifactory", credentialsId:"JFrog-Token"
+                    def properties = "buildid=${env.BUILD_ID},commitid=${GIT_COMMIT}";
+                    def uploadSpec = """{
+                        "files": [
+                          {
+                            "pattern": "jarstaging/(*)",
+                            "target": "twittertrend_build-libs-release-local/{1}",
+                            "flat": "false",
+                            "props": "${properties}",
+                            "exclusions": ["*.sha1", "*.md5"]
+                           }
+                        ]
+                    }"""
+                    def buildInfo = server.upload(uploadSpec)
+                    buildInfo.env.collect()
+                    server.publishBuildInfo(buildInfo)
+                    echo '<--------------Jar Publish Ended----------------->'
+                }
+            }
+                
+        }
     }
 }    
-
-
-

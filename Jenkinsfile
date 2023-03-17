@@ -51,8 +51,8 @@ pipeline{
             steps {
                 script {
                     echo '<--------------Jar Publish Started---------------->'
-                    def server = Artifactory.newServer url:registry+"/artifactory", credentialsId:"JFrog-Token"
-                    def properties = "buildid=${env.BUILD_ID},commitid=${GIT_COMMIT}";
+                    def server = Artifactory.newServer url:registry+"/artifactory" , credentialsId:"JFrog-Token"
+                    def properties = "buildid=${env.BUILD_ID},commitid=${GIT_COMMIT}"
                     def uploadSpec = """{
                         "files": [
                           {
@@ -72,5 +72,32 @@ pipeline{
             }
                 
         }
+        stage("Docker Build") {
+            steps {
+                script {
+                    echo '<----------Docker Build Started------------>'
+                    app = docker.build(imageName+":"+version)
+                    echo '<----------Docker Build Ends---------------->'
+                }
+            }
+        }
+        stage("Docker Publish") {
+            steps {
+                script {
+                    echo '<-------------Docker Publish Started-------------->'
+                    docker.withRegistry(registry, 'JFrog-Token'){
+                        app.push()
+                        
+                    }
+                    echo '<--------------Docker Publish Ended---------------->'
+                }
+            }
+        }
+        stage("Deploy") {
+            steps {
+                sh './deploy.sh'
+            }
+        }
+            
     }
-}    
+}

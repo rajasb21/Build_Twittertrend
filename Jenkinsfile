@@ -93,9 +93,14 @@ pipeline{
                 }
             }
         }
-        stage("Permission & Deploy") {
+        stage("Permission") {
             steps {
-                sh 'chmod +x deploy.sh', './deploy.sh'
+                sh 'chmod +x deploy.sh'
+            }
+        }
+        stage("Deploy") {
+            steps {
+                sh './deploy.sh'
             }
         }
             
